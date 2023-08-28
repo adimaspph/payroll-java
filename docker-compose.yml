@@ -1,0 +1,37 @@
+version: '2'
+services:
+  db:
+    image: mariadb:10.4.24
+    restart: always
+    env_file:
+      - app.env
+    volumes:
+      - mysql-db-volume:/var/lib/mysql
+    networks:
+      - backend-network
+
+  web:
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./file-storage:/file-storage
+      - ./log:/log
+    env_file:
+      - app.env
+    depends_on:
+      - db
+    networks:
+      - frontend-network
+      - backend-network
+
+volumes:
+  mysql-db-volume:
+
+networks:
+  frontend-network:
+    driver: bridge
+  backend-network:
+
+
