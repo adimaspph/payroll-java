@@ -1,4 +1,4 @@
-package com.office.payroll.exception;
+package com.office.payroll.exception.custom;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

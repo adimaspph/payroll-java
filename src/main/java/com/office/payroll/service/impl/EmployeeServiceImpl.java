@@ -1,15 +1,15 @@
 package com.office.payroll.service.impl;
 
-import com.office.payroll.exception.EmployeeAlreadyExistException;
-import com.office.payroll.exception.EmployeeNotFoundException;
+import com.office.payroll.exception.custom.EmployeeAlreadyExistException;
+import com.office.payroll.exception.custom.EmployeeNotFoundException;
 import com.office.payroll.model.Employee;
 import com.office.payroll.repository.EmployeeRepository;
 import com.office.payroll.service.EmployeeService;
 import com.office.payroll.service.SalaryMatrixService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -44,7 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Employee createEmployee(Employee employee) {
         try {
             if (!salaryMatrixService.checkIfGradeExist(employee.getGrade())) {
-                throw new IllegalArgumentException("Grade is not exist");
+                throw new IllegalArgumentException("Grade " + employee.getGrade() + " is not exist");
             }
             return employeeRepository.save(employee);
         } catch (DataIntegrityViolationException ex) {

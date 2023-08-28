@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -41,10 +42,13 @@ public class SalaryMatrixController {
     @PostMapping
     public ResponseEntity<ResponseTemplate<SalaryMatrix>> createSalaryMatrix(@Valid @RequestBody SalaryMatrix salaryMatrix) {
         SalaryMatrix createdSalaryMatrix = salaryMatrixService.createSalaryMatrix(salaryMatrix);
+
         ResponseTemplate<SalaryMatrix> responseTemplate = new ResponseTemplate<>();
-        responseTemplate.setStatus(HttpStatus.OK.toString());
+        responseTemplate.setTimestamp(LocalDateTime.now());
+        responseTemplate.setStatus(HttpStatus.CREATED.toString());
         responseTemplate.setData(createdSalaryMatrix);
-        return ResponseEntity.ok(responseTemplate);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseTemplate);
     }
 
     @PutMapping("/{id}")

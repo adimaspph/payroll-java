@@ -1,7 +1,7 @@
 package com.office.payroll.service.impl;
 
-import com.office.payroll.exception.PayrollAlreadyExistException;
-import com.office.payroll.exception.PayrollNotFoundException;
+import com.office.payroll.exception.custom.PayrollAlreadyExistException;
+import com.office.payroll.exception.custom.PayrollNotFoundException;
 import com.office.payroll.model.Employee;
 import com.office.payroll.model.Gender;
 import com.office.payroll.model.Payroll;

@@ -1,21 +1,20 @@
 package com.office.payroll.service.impl;
 
-import com.office.payroll.exception.SalaryMatrixAlreadyExistException;
-import com.office.payroll.exception.SalaryMatrixNotFoundException;
+import com.office.payroll.exception.custom.SalaryMatrixAlreadyExistException;
+import com.office.payroll.exception.custom.SalaryMatrixNotFoundException;
 import com.office.payroll.model.SalaryMatrix;
 import com.office.payroll.repository.SalaryMatrixRepository;
 import com.office.payroll.service.SalaryMatrixService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-
-@Service
 @Transactional
+@Service
 @Slf4j
 public class SalaryMatrixServiceImpl implements SalaryMatrixService {
 

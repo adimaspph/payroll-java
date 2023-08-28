@@ -1,6 +1,5 @@
 package com.office.payroll.controller;
 
-import com.office.payroll.model.Employee;
 import com.office.payroll.model.Payroll;
 import com.office.payroll.model.dto.request.PayrollRequestDTO;
 import com.office.payroll.model.dto.response.ResponseTemplate;
@@ -10,7 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/payrolls")
@@ -21,14 +21,6 @@ public class PayrollController {
     @Autowired
     public PayrollController(PayrollService payrollService) {
         this.payrollService = payrollService;
-    }
-
-    @GetMapping
-    public ResponseEntity<ResponseTemplate<List<Payroll>>> getAllPayrolls() {
-        ResponseTemplate<List<Payroll>> responseTemplate = new ResponseTemplate<>();
-        responseTemplate.statusOk(payrollService.getAllPayrolls());
-
-        return ResponseEntity.ok(responseTemplate);
     }
 
     @GetMapping("/{id}")
@@ -52,28 +44,10 @@ public class PayrollController {
         );
 
         ResponseTemplate<Payroll> responseTemplate = new ResponseTemplate<>();
-        responseTemplate.statusOk(createdPayroll);
+        responseTemplate.setTimestamp(LocalDateTime.now());
+        responseTemplate.setStatus(HttpStatus.CREATED.toString());
+        responseTemplate.setData(createdPayroll);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseTemplate);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<ResponseTemplate<Payroll>> updatePayroll(@PathVariable Long id, @RequestBody Payroll payroll) {
-        Payroll updatedPayroll = payrollService.updatePayroll(id, payroll);
-
-        ResponseTemplate<Payroll> responseTemplate = new ResponseTemplate<>();
-        responseTemplate.statusOk(updatedPayroll);
-
-        return ResponseEntity.ok(responseTemplate);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseTemplate<String>> deletePayroll(@PathVariable Long id) {
-        payrollService.deletePayroll(id);
-
-        ResponseTemplate<String> responseTemplate = new ResponseTemplate<>();
-        responseTemplate.statusOk("Payroll with id " + id + " has been deleted");
-
-        return ResponseEntity.ok(responseTemplate);
     }
 }

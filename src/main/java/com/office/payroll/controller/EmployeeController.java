@@ -8,9 +8,11 @@ import com.office.payroll.service.EmployeeService;
 import com.office.payroll.service.SalaryMatrixService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -58,9 +60,13 @@ public class EmployeeController {
     @PostMapping
     public ResponseEntity<ResponseTemplate<Employee>> createEmployee(@Valid @RequestBody Employee employee) {
         Employee createdEmployee = employeeService.createEmployee(employee);
+
         ResponseTemplate<Employee> responseTemplate = new ResponseTemplate<>();
-        responseTemplate.statusOk(createdEmployee);
-        return ResponseEntity.ok(responseTemplate);
+        responseTemplate.setTimestamp(LocalDateTime.now());
+        responseTemplate.setStatus(HttpStatus.CREATED.toString());
+        responseTemplate.setData(createdEmployee);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseTemplate);
     }
 
     @PutMapping("/{id}")

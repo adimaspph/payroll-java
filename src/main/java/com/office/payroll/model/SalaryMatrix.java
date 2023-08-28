@@ -3,14 +3,13 @@ package com.office.payroll.model;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -23,13 +22,18 @@ public class SalaryMatrix {
 
     @NotNull
     @Column(unique = true, nullable = false)
+    @Min(1)
     private Integer grade;
 
+    @Min(0)
     private double basicSalary;
 
+    @Min(0)
     private double payCut;
 
+    @Min(0)
     private double allowance;
 
+    @Min(0)
     private double headOfFamily;
 }

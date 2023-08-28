@@ -1,26 +1,30 @@
 package com.office.payroll.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.office.payroll.model.Employee;
+import com.office.payroll.model.Gender;
 import com.office.payroll.model.Payroll;
+import com.office.payroll.model.dto.request.PayrollRequestDTO;
 import com.office.payroll.service.PayrollService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(PayrollController.class)
+//@RunWith(SpringRunner.class)
+@AutoConfigureMockMvc
 public class PayrollControllerTests {
 
     @Autowired
@@ -28,6 +32,9 @@ public class PayrollControllerTests {
 
     @MockBean
     private PayrollService payrollService;
+
+    @Autowired
+    PayrollController payrollController;
 
     @Autowired
     private ObjectMapper objectMapper; // ObjectMapper to convert objects to JSON
@@ -38,76 +45,130 @@ public class PayrollControllerTests {
     }
 
     @Test
-    public void testGetAllPayrolls() throws Exception {
-        Payroll payroll1 = new Payroll(1L, 1000.0, 100.0, 200.0, new Date(), null);
-        Payroll payroll2 = new Payroll(2L, 1200.0, 150.0, 250.0, new Date(), null);
-        List<Payroll> payrollList = Arrays.asList(payroll1, payroll2);
-
-        when(payrollService.getAllPayrolls()).thenReturn(payrollList);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/payrolls"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(1L))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].basicPayroll").value(1000.0))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(2L))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].basicPayroll").value(1200.0));
+    public void whenUserControllerInjected_thenNotNull() {
+        assertThat(payrollController).isNotNull();
     }
 
     @Test
-    public void testGetPayrollById() throws Exception {
-        Payroll payroll = new Payroll(1L, 1000.0, 100.0, 200.0, new Date(), null);
+    public void whenGetPayrollById_thenCorrectResponse() throws Exception {
+        Payroll payroll = new Payroll(1L, 1000.0, 100.0, 200.0, 6, 2023, null);
 
         when(payrollService.getPayrollById(1L)).thenReturn(payroll);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/payrolls/1"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1L))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.basicPayroll").value(1000.0));
+                .andExpect(jsonPath("$.status").value("200 OK"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").value(1L))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.basic_payroll").value(1000.0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.paycut").value(100.0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.additional_salary").value(200.0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.month").value(6))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.year").value(2023));
     }
 
     @Test
-    public void testCreatePayroll() throws Exception {
-        Payroll payroll = new Payroll(null, 1200.0, 150.0, 250.0, new Date(), null);
-        Payroll createdPayroll = new Payroll(1L, 1200.0, 150.0, 250.0, new Date(), null);
+    public void whenCreatePayrollValid_thenCorrectResponse() throws Exception {
+        Employee employee = new Employee("1", "Adimas", Gender.MALE, 1, false, null);
+        PayrollRequestDTO payrollRequest = new PayrollRequestDTO("1", 20, 1, 6, 2023);
+        Payroll createdPayroll = new Payroll(1L, 1200.0, 150.0, 250.0, 6, 2023, employee);
 
-        when(payrollService.createPayroll(any(Payroll.class))).thenReturn(createdPayroll);
+        when(payrollService.createPayrollFromInput("1", 20, 1, 6, 2023)).thenReturn(createdPayroll);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/payrolls")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payroll)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
+                        .content(objectMapper.writeValueAsString(payrollRequest)))
+                .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1L))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.basicPayroll").value(1200.0));
+                .andExpect(jsonPath("$.status").value("201 CREATED"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").value(1L))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.basic_payroll").value(1200))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.paycut").value(150))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.additional_salary").value(250))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.month").value(6))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.year").value(2023))
+        ;
     }
 
     @Test
-    public void testUpdatePayroll() throws Exception {
-        Payroll updatedPayroll = new Payroll(1L, 1500.0, 100.0, 300.0, new Date(), null);
+    public void whenCreatePayrollInvalidEmployeeId_thenCorrectResponse() throws Exception {
+        String user = "{\n" +
+                "  \"employeeId\": 1,\n" +
+                "  \"daysWorked\": 20,\n" +
+                "  \"daysAbsent\": 1,\n" +
+                "  \"month\": 6,\n" +
+                "  \"year\": 2023\n" +
+                "}";
 
-        when(payrollService.updatePayroll(eq(1L), any(Payroll.class))).thenReturn(updatedPayroll);
-
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/payrolls/1")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/payrolls")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedPayroll)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1L))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.basicPayroll").value(1500.0));
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
     @Test
-    public void testDeletePayroll() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/payrolls/1"))
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
+    public void whenCreatePayrollInvalidDaysWorked_thenCorrectResponse() throws Exception {
+        String user = "{\n" +
+                "  \"employeeId\": \"1\",\n" +
+                "  \"daysWorked\": -1,\n" +
+                "  \"daysAbsent\": 1,\n" +
+                "  \"month\": 6,\n" +
+                "  \"year\": 2023\n" +
+                "}";
 
-        verify(payrollService, times(1)).deletePayroll(1L);
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/payrolls")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
-    // Add more tests for other scenarios and edge cases
+    @Test
+    public void whenCreatePayrollInvalidDaysAbsent_thenCorrectResponse() throws Exception {
+        String user = "{\n" +
+                "  \"employeeId\": \"1\",\n" +
+                "  \"daysWorked\": 20,\n" +
+                "  \"daysAbsent\": -1,\n" +
+                "  \"month\": 6,\n" +
+                "  \"year\": 2023\n" +
+                "}";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/payrolls")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @Test
+    public void whenCreatePayrollInvalidMonth_thenCorrectResponse() throws Exception {
+        String user = "{\n" +
+                "  \"employeeId\": \"1\",\n" +
+                "  \"daysWorked\": 20,\n" +
+                "  \"daysAbsent\": 1,\n" +
+                "  \"month\": -6,\n" +
+                "  \"year\": 2023\n" +
+                "}";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/payrolls")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @Test
+    public void whenCreatePayrollInvalidYear_thenCorrectResponse() throws Exception {
+        String user = "{\n" +
+                "  \"employeeId\": \"1\",\n" +
+                "  \"daysWorked\": 20,\n" +
+                "  \"daysAbsent\": 1,\n" +
+                "  \"month\": 6,\n" +
+                "  \"year\": -2023\n" +
+                "}";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/payrolls")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
 
 }
 
