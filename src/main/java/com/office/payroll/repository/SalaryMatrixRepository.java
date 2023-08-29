@@ -9,11 +9,6 @@ import java.util.Optional;
 @Repository
 public interface SalaryMatrixRepository extends JpaRepository<SalaryMatrix, Long> {
     Optional<SalaryMatrix> findSalaryMatrixByGrade(Integer grade);
-
     Boolean existsByGrade(Integer grade);
-
-
-
-
 }
 

@@ -36,6 +36,16 @@ public class EmployeeController {
         return ResponseEntity.ok(responseTemplate);
     }
 
+    @GetMapping("/page")
+    public ResponseEntity<ResponseTemplate<List<Employee>>> getAllEmployeesPage(
+            @RequestParam(defaultValue = "0") int pageNumber,
+            @RequestParam(defaultValue = "10") int pageSize) {
+
+        ResponseTemplate<List<Employee>> responseTemplate = new ResponseTemplate<>();
+        responseTemplate.statusOk(employeeService.getAllEmployeesPage(pageNumber, pageSize));
+        return ResponseEntity.ok(responseTemplate);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ResponseTemplate<Employee>> getEmployeeById(@PathVariable String id) {
         Employee employee = employeeService.getEmployeeById(id);

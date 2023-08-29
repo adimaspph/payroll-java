@@ -1,14 +1,15 @@
 package com.office.payroll.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.office.payroll.exception.custom.EmployeeNotFoundException;
 import com.office.payroll.model.Employee;
 import com.office.payroll.model.Gender;
 import com.office.payroll.model.Payroll;
 import com.office.payroll.model.SalaryMatrix;
 import com.office.payroll.service.EmployeeService;
 import com.office.payroll.service.SalaryMatrixService;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -25,6 +26,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(EmployeeController.class)
 public class EmployeeControllerTests {
@@ -50,7 +52,7 @@ public class EmployeeControllerTests {
     }
 
     @Test
-    public void whenUserControllerInjected_thenNotNull() throws Exception {
+    public void whenUserControllerInjected_thenNotNull() {
         assertThat(employeeController).isNotNull();
     }
 
@@ -74,6 +76,34 @@ public class EmployeeControllerTests {
     }
 
     @Test
+    public void testGetAllEmployeesPage() throws Exception {
+        // Mock data
+        List<Employee> employees = Arrays.asList(
+                new Employee("1", "John Doe", Gender.MALE, 3, true, new ArrayList<>()),
+                new Employee("2", "Jane Smith", Gender.FEMALE, 2, false, new ArrayList<>())
+        );
+
+        when(employeeService.getAllEmployeesPage(0, 10)).thenReturn(employees);
+
+        // Perform GET request
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/employees/page"))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.data[0].id").value("1"))
+                .andExpect(jsonPath("$.data[0].name").value("John Doe"))
+                .andExpect(jsonPath("$.data[0].gender").value("MALE"))
+                .andExpect(jsonPath("$.data[0].grade").value(3))
+                .andExpect(jsonPath("$.data[0].married").value(true))
+                .andExpect(jsonPath("$.data[1].id").value("2"))
+                .andExpect(jsonPath("$.data[1].name").value("Jane Smith"))
+                .andExpect(jsonPath("$.data[1].gender").value("FEMALE"))
+                .andExpect(jsonPath("$.data[1].grade").value(2))
+                .andExpect(jsonPath("$.data[1].married").value(false));
+
+        verify(employeeService, times(1)).getAllEmployeesPage(0, 10);
+    }
+
+    @Test
     public void whenGetEmployeeById_thenCorrectResponse() throws Exception {
         Employee employee = new Employee("1", "John Doe", Gender.MALE, 1, true, null);
 
@@ -85,6 +115,14 @@ public class EmployeeControllerTests {
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").value("1"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.name").value("John Doe"));
+    }
+
+    @Test
+    public void whenGetEmployeeByIdInvalidId_thenErrorResponse() throws Exception {
+        when(employeeService.getEmployeeById(anyString())).thenThrow(new EmployeeNotFoundException("Employee ID not found"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/employees/1"))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
     @Test
@@ -102,6 +140,49 @@ public class EmployeeControllerTests {
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").value("1"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.name").value("John Doe"));
+    }
+
+    @Test
+    public void whenCreateEmployeeInvalidName_thenErrorResponse() throws Exception {
+        Employee employee = new Employee(null, "", Gender.MALE, 1, true, null);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/employees")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(employee)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @Test
+    public void whenCreateEmployeeInvalidGender_thenErrorResponse() throws Exception {
+
+        String body = """
+                {
+                  "name": "John Doe",
+                  "gender": "BISEX",
+                  "grade": 0,
+                  "married": true
+                }""";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/employees")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @Test
+    public void whenCreateEmployeeNullGrade_thenErrorResponse() throws Exception {
+
+        String body = """
+                {
+                  "name": "John Doe",
+                  "gender": "bisex",
+                  "married": true
+                }""";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/employees")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
     @Test
@@ -144,6 +225,16 @@ public class EmployeeControllerTests {
     }
 
     @Test
+    public void whenGetAllPayrollEmployeeByIdInvalid_thenErrorResponse() throws Exception {
+
+        when(employeeService.getEmployeeById(anyString())).thenThrow(new EmployeeNotFoundException("Id not found"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/employees/1/payroll"))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
     public void whenUpdateEmployee_thenCorrectResponse() throws Exception {
         Employee updatedEmployee = new Employee("1", "John Updated", Gender.MALE, 2, false, null);
 
@@ -160,11 +251,31 @@ public class EmployeeControllerTests {
     }
 
     @Test
+    public void whenUpdateEmployeeInvalidId_thenCorrectResponse() throws Exception {
+        Employee updatedEmployee = new Employee("1", "John Updated", Gender.MALE, 2, false, null);
+
+        when(employeeService.updateEmployee(eq("9"), any(Employee.class))).thenThrow(new EmployeeNotFoundException("id not found"));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/employees/9")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedEmployee)))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @Test
     public void whenDeleteEmployee_thenCorrectResponse() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/employees/1"))
                 .andExpect(MockMvcResultMatchers.status().isOk());
 
         verify(employeeService, times(1)).deleteEmployee("1");
+    }
+
+    @Test
+    public void whenDeleteEmployeeInvalidId_thenErrorResponse() throws Exception {
+        doThrow(new EmployeeNotFoundException("ID salary not found")).when(employeeService).deleteEmployee("9");
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/employees/9"))
+                .andExpect(status().is4xxClientError());
     }
 }
 

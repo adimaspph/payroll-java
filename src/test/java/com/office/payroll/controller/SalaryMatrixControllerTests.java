@@ -1,6 +1,7 @@
 package com.office.payroll.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.office.payroll.exception.custom.SalaryMatrixNotFoundException;
 import com.office.payroll.model.SalaryMatrix;
 import com.office.payroll.service.SalaryMatrixService;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +95,7 @@ public class SalaryMatrixControllerTests {
     }
 
     @Test
-    public void whenCreateSalaryMatrixInvalidBasicSalary_thenCorrectResponse() throws Exception {
+    public void whenCreateSalaryMatrixInvalidBasicSalary_thenErrorResponse() throws Exception {
         // Mock data
         SalaryMatrix matrix = new SalaryMatrix(1L, 1, -1, 100.0, 200.0, 0.0);
 
@@ -106,7 +107,7 @@ public class SalaryMatrixControllerTests {
     }
 
     @Test
-    public void whenCreateSalaryMatrixInvalidPaycut_thenCorrectResponse() throws Exception {
+    public void whenCreateSalaryMatrixInvalidPaycut_thenErrorResponse() throws Exception {
         // Mock data
         SalaryMatrix matrix = new SalaryMatrix(1L, 1, 1000, -100.0, 200.0, 0.0);
 
@@ -118,7 +119,7 @@ public class SalaryMatrixControllerTests {
     }
 
     @Test
-    public void whenCreateSalaryMatrixInvalidAllowance_thenCorrectResponse() throws Exception {
+    public void whenCreateSalaryMatrixInvalidAllowance_thenErrorResponse() throws Exception {
         // Mock data
         SalaryMatrix matrix = new SalaryMatrix(1L, 1, 1000, 100.0, -200.0, 0.0);
 
@@ -130,7 +131,7 @@ public class SalaryMatrixControllerTests {
     }
 
     @Test
-    public void whenCreateSalaryMatrixInvalidHeadOfFamily_thenCorrectResponse() throws Exception {
+    public void whenCreateSalaryMatrixInvalidHeadOfFamily_thenErrorResponse() throws Exception {
         // Mock data
         SalaryMatrix matrix = new SalaryMatrix(1L, 1, 1000, 100.0, 200.0, -1);
 
@@ -161,11 +162,30 @@ public class SalaryMatrixControllerTests {
     }
 
     @Test
+    public void whenGetSalaryMatrixByIdInvalidId_thenErrorResponse() throws Exception {
+
+        when(salaryMatrixService.getSalaryMatrixById(9L)).thenThrow(new SalaryMatrixNotFoundException("ID salary not found"));
+
+        // Perform GET request
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/salary-matrices/9")
+                        .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().is4xxClientError());
+    }
+
+    @Test
     public void whenDeleteSalaryMatrix_thenCorrectResponse() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/salary-matrices/1"))
                 .andExpect(status().isNoContent());
 
         verify(salaryMatrixService, times(1)).deleteSalaryMatrix(1L);
+    }
+
+    @Test
+    public void whenDeleteSalaryMatrixInvalidId_thenErrorResponse() throws Exception {
+        doThrow(new SalaryMatrixNotFoundException("ID salary not found")).when(salaryMatrixService).deleteSalaryMatrix(9L);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/salary-matrices/9"))
+                .andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -187,6 +207,20 @@ public class SalaryMatrixControllerTests {
                 .andExpect(jsonPath("$.data.basic_salary").value(1000.0));
 
         verify(salaryMatrixService, times(1)).updateSalaryMatrix(eq(1L), any(SalaryMatrix.class));
+    }
+
+    @Test
+    public void whenUpdateSalaryMatrixInvalid_thenErrorResponse() throws Exception {
+        // Mock data
+        SalaryMatrix matrix = new SalaryMatrix(9L, 1, 1000.0, 100.0, 200.0, 0.0);
+
+        when(salaryMatrixService.updateSalaryMatrix(anyLong(), any(SalaryMatrix.class))).thenThrow(new SalaryMatrixNotFoundException("ID salary not found"));
+
+        // Perform GET request
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/salary-matrices/9")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(matrix)))
+                .andExpect(status().is4xxClientError());
     }
 }
 
